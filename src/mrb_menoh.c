@@ -14,6 +14,17 @@ check_error(mrb_state *mrb, menoh_error_code code)
 }
 
 static void
+profile_builder_free(mrb_state *mrb, void *ptr)
+{
+  menoh_variable_profile_table_builder_handle h = (menoh_variable_profile_table_builder_handle)ptr;
+  if (h) {
+    menoh_delete_variable_profile_table_builder(h);
+  }
+}
+
+static mrb_data_type profile_builder_type = { "Menoh::VariableProfileTableBuilder", profile_builder_free };
+
+static void
 model_data_free(mrb_state *mrb, void *ptr)
 {
   menoh_model_data_handle h = (menoh_model_data_handle)ptr;
@@ -194,6 +205,146 @@ model_init(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value
+model_variable_buffer_handle(mrb_state *mrb, mrb_value self)
+{
+  void *ptr;
+  char const *name;
+  mrb_get_args(mrb, "z", &name);
+  check_error(mrb, menoh_model_get_variable_buffer_handle((menoh_model_handle)DATA_PTR(self), name, &ptr));
+  return mrb_cptr_value(mrb, ptr);
+}
+
+static mrb_value
+model_variable_dtype(mrb_state *mrb, mrb_value self)
+{
+  char const *name;
+  menoh_dtype t;
+  mrb_sym sym;
+  mrb_get_args(mrb, "zn", &name, &sym);
+  check_error(mrb, menoh_model_get_variable_dtype((menoh_model_handle)DATA_PTR(self), name, &t));
+  if (t != menoh_dtype_float) {
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid dtype: %S", mrb_fixnum_value(t));
+  }
+  return mrb_symbol_value(mrb_intern_lit(mrb, "float"));
+}
+
+static mrb_value
+model_variable_dims(mrb_state *mrb, mrb_value self)
+{
+  int32_t dims_size;
+  char const *name;
+  mrb_value ret = mrb_ary_new(mrb);
+  mrb_get_args(mrb, "z", &name);
+  check_error(mrb, menoh_model_get_variable_dims_size((menoh_model_handle)DATA_PTR(self), name, &dims_size));
+  for (int i = 0; i < dims_size; ++i) {
+    int32_t dim_size;
+    check_error(mrb, menoh_model_get_variable_dims_at((menoh_model_handle)DATA_PTR(self), name, i, &dim_size));
+    mrb_ary_push(mrb, ret, mrb_fixnum_value(dim_size));
+  }
+  return ret;
+}
+
+static mrb_value
+model_run(mrb_state *mrb, mrb_value self)
+{
+  mrb_get_args(mrb, "");
+  check_error(mrb, menoh_model_run((menoh_model_handle)DATA_PTR(self)));
+  return self;
+}
+
+static void
+prof_free(mrb_state *mrb, void *ptr)
+{
+  menoh_variable_profile_table_handle h = (menoh_variable_profile_table_handle)ptr;
+  if (h) {
+    menoh_delete_variable_profile_table(h);
+  }
+}
+
+static mrb_data_type prof_type = { "Menoh::VariableProfileTable", prof_free };
+
+static mrb_value
+prof_init(mrb_state *mrb, mrb_value self)
+{
+  menoh_variable_profile_table_handle h;
+  menoh_variable_profile_table_builder_handle builder;
+  menoh_model_data_handle data;
+  mrb_get_args(mrb, "dd", &builder, &profile_builder_type, &data, &model_data_type);
+  check_error(mrb, menoh_build_variable_profile_table(builder, data, &h));
+  mrb_data_init(self, data, &prof_type);
+  return self;
+}
+
+static mrb_value
+prof_dtype(mrb_state *mrb, mrb_value self)
+{
+  char const *name;
+  menoh_dtype t;
+  mrb_sym sym;
+  mrb_get_args(mrb, "zn", &name, &sym);
+  check_error(mrb, menoh_variable_profile_table_get_dtype(
+      (menoh_variable_profile_table_handle)DATA_PTR(self), name, &t));
+  if (t != menoh_dtype_float) {
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid dtype: %S", mrb_fixnum_value(t));
+  }
+  return mrb_symbol_value(mrb_intern_lit(mrb, "float"));
+}
+
+static mrb_value
+prof_dims(mrb_state *mrb, mrb_value self)
+{
+  int32_t dims_size;
+  char const *name;
+  mrb_value ret = mrb_ary_new(mrb);
+  mrb_get_args(mrb, "z", &name);
+  check_error(mrb, menoh_variable_profile_table_get_dims_size(
+      (menoh_variable_profile_table_handle)DATA_PTR(self), name, &dims_size));
+  for (int i = 0; i < dims_size; ++i) {
+    int32_t dim_size;
+    check_error(mrb, menoh_variable_profile_table_get_dims_at(
+        (menoh_variable_profile_table_handle)DATA_PTR(self), name, i, &dim_size));
+    mrb_ary_push(mrb, ret, mrb_fixnum_value(dim_size));
+  }
+  return ret;
+}
+
+static mrb_value
+profile_builder_init(mrb_state *mrb, mrb_value self)
+{
+  menoh_variable_profile_table_builder_handle h;
+  mrb_get_args(mrb, "");
+  menoh_make_variable_profile_table_builder(&h);
+  mrb_data_init(self, h, &profile_builder_type);
+  return self;
+}
+
+static mrb_value
+profile_builder_add_input_profile(mrb_state *mrb, mrb_value self)
+{
+  char const *name;
+  mrb_value dtype;
+  mrb_value dims_v;
+  mrb_get_args(mrb, "zoA", &name, &dtype, &dims_v);
+  int32_t dims[RARRAY_LEN(dims_v)];
+  for (int i = 0; i < RARRAY_LEN(dims_v); ++i) {
+    dims[i] = mrb_fixnum(RARRAY_PTR(dims_v)[i]);
+  }
+  check_error(mrb, menoh_variable_profile_table_builder_add_input_profile(
+      (menoh_variable_profile_table_builder_handle)DATA_PTR(self), name, to_dtype(mrb, dtype), RARRAY_LEN(dims_v), dims));
+  return self;
+}
+
+static mrb_value
+profile_builder_add_output_name(mrb_state *mrb, mrb_value self)
+{
+  char const *name;
+  mrb_get_args(mrb, "z", &name);
+  check_error(mrb, menoh_variable_profile_table_builder_add_output_name(
+      (menoh_variable_profile_table_builder_handle)DATA_PTR(self), name));
+  return self;
+}
+
 void
 mrb_mruby_menoh_gem_init(mrb_state *mrb)
 {
@@ -228,7 +379,7 @@ mrb_mruby_menoh_gem_init(mrb_state *mrb)
   mrb_define_method(mrb, model, "variable_buffer_handle", model_variable_buffer_handle, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, model, "variable_dtype", model_variable_dtype, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, model, "variable_dims", model_variable_dims, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, model, "run", MRB_ARGS_NONE());
+  mrb_define_method(mrb, model, "run", model_run, MRB_ARGS_NONE());
 
   mrb_define_method(mrb, profile, "initialize", prof_init, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, profile, "dtype", prof_dtype, MRB_ARGS_REQ(1));
@@ -236,10 +387,7 @@ mrb_mruby_menoh_gem_init(mrb_state *mrb)
 
   mrb_define_method(mrb, profile_builder, "initialize", profile_builder_init, MRB_ARGS_NONE());
   mrb_define_method(mrb, profile_builder, "add_input_profile", profile_builder_add_input_profile, MRB_ARGS_REQ(3));
-  mrb_define_method(mrb, profile_builder, "add_input_profile_dims_2", profile_builder_add_input_profile_dims_2, MRB_ARGS_REQ(4));
-  mrb_define_method(mrb, profile_builder, "add_input_profile_dims_4", profile_builder_add_input_profile_dims_4, MRB_ARGS_REQ(6));
   mrb_define_method(mrb, profile_builder, "add_output_name", profile_builder_add_output_name, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, profile_builder, "add_output_profile", profile_builder_add_output_profile, MRB_ARGS_REQ(2));
 }
 
 void
