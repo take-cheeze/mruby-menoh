@@ -252,31 +252,20 @@ model_run(mrb_state *mrb, mrb_value self)
   return self;
 }
 
-static void
-prof_free(mrb_state *mrb, void *ptr)
-{
-  menoh_variable_profile_table_handle h = (menoh_variable_profile_table_handle)ptr;
-  if (h) {
-    menoh_delete_variable_profile_table(h);
-  }
-}
-
-static mrb_data_type prof_type = { "Menoh::VariableProfileTable", prof_free };
-
 static mrb_value
-prof_init(mrb_state *mrb, mrb_value self)
+profile_init(mrb_state *mrb, mrb_value self)
 {
   menoh_variable_profile_table_handle h;
   menoh_variable_profile_table_builder_handle builder;
   menoh_model_data_handle data;
   mrb_get_args(mrb, "dd", &builder, &profile_builder_type, &data, &model_data_type);
   check_error(mrb, menoh_build_variable_profile_table(builder, data, &h));
-  mrb_data_init(self, data, &prof_type);
+  mrb_data_init(self, h, &profile_type);
   return self;
 }
 
 static mrb_value
-prof_dtype(mrb_state *mrb, mrb_value self)
+profile_dtype(mrb_state *mrb, mrb_value self)
 {
   char const *name;
   menoh_dtype t;
@@ -291,7 +280,7 @@ prof_dtype(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
-prof_dims(mrb_state *mrb, mrb_value self)
+profile_dims(mrb_state *mrb, mrb_value self)
 {
   int32_t dims_size;
   char const *name;
@@ -380,9 +369,9 @@ mrb_mruby_menoh_gem_init(mrb_state *mrb)
   mrb_define_method(mrb, model, "variable_dims", model_variable_dims, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, model, "run", model_run, MRB_ARGS_NONE());
 
-  mrb_define_method(mrb, profile, "initialize", prof_init, MRB_ARGS_REQ(2));
-  mrb_define_method(mrb, profile, "dtype", prof_dtype, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, profile, "dims", prof_dims, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, profile, "initialize", profile_init, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, profile, "dtype", profile_dtype, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, profile, "dims", profile_dims, MRB_ARGS_REQ(1));
 
   mrb_define_method(mrb, profile_builder, "initialize", profile_builder_init, MRB_ARGS_NONE());
   mrb_define_method(mrb, profile_builder, "add_input_profile", profile_builder_add_input_profile, MRB_ARGS_REQ(3));
