@@ -30,7 +30,6 @@ model_data_free(mrb_state *mrb, void *ptr)
   menoh_model_data_handle h = (menoh_model_data_handle)ptr;
   if (h) {
     menoh_delete_model_data(h);
-    mrb_free(mrb, ptr);
   }
 }
 
