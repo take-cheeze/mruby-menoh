@@ -8,5 +8,5 @@ script:
   - curl -LO https://github.com/pfnet-research/menoh/releases/download/v1.1.1/ubuntu1604_menoh_1.1.1-1_amd64.deb
   - curl -LO https://github.com/pfnet-research/menoh/releases/download/v1.1.1/ubuntu1604_menoh-dev_1.1.1-1_amd64.deb
   - sudo apt install ./ubuntu1604_*_amd64.deb
-  - git clone https://github.com/mruby/mruby.git
-  - cd mruby && MRUBY_CONFIG=../.travis_config.rb ./minirake all test
+  - git clone --depth=1 https://github.com/mruby/mruby.git
+  - cd mruby && MRUBY_CONFIG=../.travis_config.rb ./minirake -j4 -v all test
