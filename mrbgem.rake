@@ -9,6 +9,7 @@ MRuby::Gem::Specification.new 'mruby-menoh' do |spec|
   linker.libraries << 'menoh'
 
   add_test_dependency 'mruby-pack'
+  add_test_dependency 'mruby-io'
 
   `wget https://preferredjp.box.com/shared/static/o2xip23e3f0knwc5ve78oderuglkf2wt.onnx -O #{MRUBY_ROOT}/vgg16.onnx` unless File.exists? "#{MRUBY_ROOT}/vgg16.onnx"
   `wget https://raw.githubusercontent.com/HoldenCaulfieldRye/caffe/master/data/ilsvrc12/synset_words.txt -O #{MRUBY_ROOT}/synset_words.txt` unless

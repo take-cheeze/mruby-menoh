@@ -2,6 +2,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <iostream>
+
 static mrb_value
 load_image_data(mrb_state *mrb, mrb_value self)
 {

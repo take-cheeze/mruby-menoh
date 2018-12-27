@@ -22,18 +22,18 @@ profile_builder_free(mrb_state *mrb, void *ptr)
   }
 }
 
-static mrb_data_type profile_builder_type = { "Menoh::VariableProfileTableBuilder", profile_builder_free };
+static mrb_data_type const profile_builder_type = { "Menoh::VariableProfileTableBuilder", profile_builder_free };
 
 static void
 model_data_free(mrb_state *mrb, void *ptr)
 {
   menoh_model_data_handle h = (menoh_model_data_handle)ptr;
   if (h) {
-    menoh_delete_model_data(h);
+    // menoh_delete_model_data(h);
   }
 }
 
-static mrb_data_type model_data_type = { "Menoh::ModelData", model_data_free };
+static mrb_data_type const model_data_type = { "Menoh::ModelData", model_data_free };
 
 static void
 profile_free(mrb_state *mrb, void *ptr)
@@ -44,7 +44,7 @@ profile_free(mrb_state *mrb, void *ptr)
   }
 }
 
-static mrb_data_type profile_type = { "Menoh::VariableProfileTable", profile_free };
+static mrb_data_type const profile_type = { "Menoh::VariableProfileTable", profile_free };
 
 static menoh_dtype
 to_dtype(mrb_state *mrb, mrb_value v)
@@ -189,7 +189,7 @@ model_free(mrb_state *mrb, void *ptr)
   }
 }
 
-static mrb_data_type model_type = { "Menoh::Model", model_free };
+static mrb_data_type const model_type = { "Menoh::Model", model_free };
 
 static mrb_value
 model_init(mrb_state *mrb, mrb_value self)
@@ -209,9 +209,10 @@ model_variable_buffer_handle(mrb_state *mrb, mrb_value self)
 {
   void *ptr;
   char const *name;
-  mrb_get_args(mrb, "z", &name);
+  mrb_int size;
+  mrb_get_args(mrb, "zi", &name, &size);
   check_error(mrb, menoh_model_get_variable_buffer_handle((menoh_model_handle)DATA_PTR(self), name, &ptr));
-  return mrb_cptr_value(mrb, ptr);
+  return mrb_str_new(mrb, ptr, sizeof(float) * size);
 }
 
 static mrb_value
@@ -366,7 +367,7 @@ mrb_mruby_menoh_gem_init(mrb_state *mrb)
   mrb_define_method(mrb, model_builder, "attach_external_buffer", model_builder_attach_external_buffer, MRB_ARGS_REQ(2));
 
   mrb_define_method(mrb, model, "initialize", model_init, MRB_ARGS_REQ(3));
-  mrb_define_method(mrb, model, "variable_buffer_handle", model_variable_buffer_handle, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, model, "variable_buffer_handle", model_variable_buffer_handle, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, model, "variable_dtype", model_variable_dtype, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, model, "variable_dims", model_variable_dims, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, model, "run", model_run, MRB_ARGS_NONE());
