@@ -343,6 +343,8 @@ mrb_mruby_menoh_gem_init(mrb_state *mrb)
   struct RClass* profile = mrb_define_class_under(mrb, mod, "VariableProfileTable", mrb->object_class);
   struct RClass* profile_builder = mrb_define_class_under(mrb, mod, "VariableProfileTableBuilder", mrb->object_class);
 
+  mrb_define_class(mrb, "MenohError", mrb_exc_get(mrb, "StandardError"));
+
   MRB_SET_INSTANCE_TT(model_data, MRB_TT_DATA);
   MRB_SET_INSTANCE_TT(model_builder, MRB_TT_DATA);
   MRB_SET_INSTANCE_TT(model, MRB_TT_DATA);
